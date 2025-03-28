@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
   http: ^1.2.0
   provider: ^6.1.1
+  carousel_slider: ^4.2.1
   google_fonts: ^6.1.0 # Check for the latest version
 
 dev_dependencies:
@@ -19,6 +20,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  #assets:
-  #  - assets/images/
-  #  - assets/icons/
+  assets:
+    - assets/food1.jpg
+    - assets/food2.jpg
+    - assets/food3.jpg

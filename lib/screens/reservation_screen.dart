@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:google_fonts/google_fonts.dart'; // Add this dependency
+import 'package:google_fonts/google_fonts.dart';
+import 'menu_screen.dart'; // Add this dependency
 
 class ReservationScreen extends StatefulWidget {
-  const ReservationScreen({super.key});
+  final String? initialPhoneNumber;
+
+  const ReservationScreen({super.key, this.initialPhoneNumber});
 
   @override
   _ReservationScreenState createState() => _ReservationScreenState();
@@ -12,9 +15,21 @@ class ReservationScreen extends StatefulWidget {
 
 class _ReservationScreenState extends State<ReservationScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
+  late TextEditingController _nameController;
+  late TextEditingController _phoneController;
   int _people = 2;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    _phoneController = TextEditingController();
+
+    // Set initial phone number if provided
+    if (widget.initialPhoneNumber != null) {
+      _phoneController.text = widget.initialPhoneNumber!;
+    }
+  }
 
   Future<void> _submitReservation() async {
     if (_formKey.currentState!.validate()) {
@@ -29,7 +44,12 @@ class _ReservationScreenState extends State<ReservationScreen> {
       );
 
       if (response.statusCode == 201) {
-        Navigator.pop(context);
+        // Navigate to Menu Screen after successful reservation
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MenuScreen()),
+        );
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
