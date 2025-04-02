@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
-import 'menu_screen.dart'; // Add this dependency
+import 'menu_screen.dart'; // Ensure this import points to your updated MenuScreen
 
 class ReservationScreen extends StatefulWidget {
   final String? initialPhoneNumber;
@@ -33,40 +33,57 @@ class _ReservationScreenState extends State<ReservationScreen> {
 
   Future<void> _submitReservation() async {
     if (_formKey.currentState!.validate()) {
-      final response = await http.post(
-        Uri.parse('http://localhost:5000/api/reservations'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'name': _nameController.text,
-          'people': _people,
-          'phone': _phoneController.text,
-        }),
-      );
-
-      if (response.statusCode == 201) {
-        // Navigate to Menu Screen after successful reservation
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const MenuScreen()),
+      try {
+        final response = await http.post(
+          Uri.parse('http://localhost:5000/api/reservations'),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'name': _nameController.text,
+            'people': _people,
+            'phone': _phoneController.text,
+          }),
         );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Reservation successful!',
-              style: GoogleFonts.poppins(color: Colors.white),
+        if (response.statusCode == 201 || response.statusCode == 200) {
+          // Navigate to MenuScreen with phone number after successful reservation
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => MenuScreen(phoneNumber: _phoneController.text),
             ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-      } else {
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Reservation successful!',
+                style: GoogleFonts.poppins(color: Colors.white),
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Reservation failed. Try again.',
+                style: GoogleFonts.poppins(color: Colors.white),
+              ),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Reservation failed. Try again.',
+              'Error: $e',
               style: GoogleFonts.poppins(color: Colors.white),
             ),
             backgroundColor: Colors.redAccent,

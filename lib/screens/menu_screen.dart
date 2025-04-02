@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'payment_screen.dart'; // Ensure this file exists
-import 'package:google_fonts/google_fonts.dart'; // Add this dependency
+import 'package:google_fonts/google_fonts.dart';
+import 'payment_screen.dart';
+import 'package:restaurant/models/orders.dart'; // Import the existing Order model
 
 class MenuScreen extends StatefulWidget {
-  const MenuScreen({super.key});
+  final String? phoneNumber; // Keep as nullable since it might not be provided
+  const MenuScreen({super.key, this.phoneNumber});
 
   @override
   _MenuScreenState createState() => _MenuScreenState();
@@ -23,20 +25,55 @@ class _MenuScreenState extends State<MenuScreen> {
       );
       if (response.statusCode == 200) {
         setState(() => _menuItems = json.decode(response.body));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.redAccent),
+      );
+    }
+  }
+
+  Future<void> _placeOrder() async {
+    if (_cart.isEmpty) return;
+    if (widget.phoneNumber == null || widget.phoneNumber!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Phone number is required'),
+            backgroundColor: Colors.redAccent),
+      );
+      return;
+    }
+    final order = Order(
+      id: 0, // ID will be assigned by backend
+      phone: widget.phoneNumber!,
+      items: _cart,
+      total: _totalAmount,
+      status: 'pending',
+    );
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:5000/api/orders'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(order.toJson()),
+      );
+      if (response.statusCode == 201) {
+        setState(() => _cart.clear());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Order placed successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to load menu. Try again.'),
-            backgroundColor: Colors.redAccent,
-          ),
+              content: Text('Failed to place order'),
+              backgroundColor: Colors.redAccent),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.redAccent,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.redAccent),
       );
     }
   }
@@ -49,20 +86,88 @@ class _MenuScreenState extends State<MenuScreen> {
         'price': item['price'],
         'quantity': 1,
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${item['name']} added to cart!'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 1),
-        ),
-      );
     });
   }
 
   double get _totalAmount {
     return _cart.fold(
-      0,
-      (sum, item) => sum + (item['price'] * item['quantity']),
+        0, (sum, item) => sum + (item['price'] * item['quantity']));
+  }
+
+  // New method to show phone number input dialog
+  void _showPhoneNumberDialog() {
+    final TextEditingController phoneController = TextEditingController();
+    final _formKey = GlobalKey<FormState>();
+
+    // Pre-fill with existing phone number if available
+    if (widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty) {
+      phoneController.text = widget.phoneNumber!;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Enter Phone Number',
+          style: GoogleFonts.poppins(
+              fontWeight: FontWeight.bold, color: Colors.teal),
+        ),
+        content: Form(
+          key: _formKey,
+          child: TextFormField(
+            controller: phoneController,
+            decoration: InputDecoration(
+              labelText: 'Phone Number',
+              labelStyle: GoogleFonts.poppins(color: Colors.teal),
+              prefixIcon: const Icon(Icons.phone, color: Colors.teal),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            keyboardType: TextInputType.phone,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Phone number is required';
+              }
+              if (value.length < 10) {
+                return 'Phone number must be at least 10 digits';
+              }
+              return null;
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child:
+                Text('Cancel', style: GoogleFonts.poppins(color: Colors.teal)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (_formKey.currentState!.validate()) {
+                Navigator.pop(context); // Close the dialog
+                // Navigate to PaymentScreen with the entered phone number
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        PaymentScreen(phoneNumber: phoneController.text),
+                  ),
+                );
+              }
+            },
+            child: Text('Proceed',
+                style: GoogleFonts.poppins(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.teal,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -75,7 +180,7 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100], // Soft background
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text(
           'Menu',
@@ -86,7 +191,6 @@ class _MenuScreenState extends State<MenuScreen> {
           ),
         ),
         backgroundColor: Colors.teal,
-        elevation: 0,
         actions: [
           IconButton(
             icon: Stack(
@@ -101,9 +205,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       child: Text(
                         _cart.length.toString(),
                         style: GoogleFonts.poppins(
-                          fontSize: 10,
-                          color: Colors.white,
-                        ),
+                            fontSize: 10, color: Colors.white),
                       ),
                     ),
                   ),
@@ -120,22 +222,14 @@ class _MenuScreenState extends State<MenuScreen> {
             child: SegmentedButton<String>(
               segments: [
                 ButtonSegment(
-                  value: 'veg',
-                  label: Text(
-                    'Vegetarian',
-                    style: GoogleFonts.poppins(),
-                  ),
-                ),
+                    value: 'veg',
+                    label: Text('Vegetarian', style: GoogleFonts.poppins())),
                 ButtonSegment(
-                  value: 'non-veg',
-                  label: Text(
-                    'Non-Veg',
-                    style: GoogleFonts.poppins(),
-                  ),
-                ),
+                    value: 'non-veg',
+                    label: Text('Non-Veg', style: GoogleFonts.poppins())),
               ],
               selected: {_selectedCategory},
-              onSelectionChanged: (Set<String> newSelection) {
+              onSelectionChanged: (newSelection) {
                 setState(() {
                   _selectedCategory = newSelection.first;
                   _loadMenu();
@@ -160,8 +254,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       return Card(
                         elevation: 4,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                            borderRadius: BorderRadius.circular(12)),
                         margin: const EdgeInsets.only(bottom: 10),
                         child: ListTile(
                           leading: item['image_url'] != null
@@ -179,16 +272,13 @@ class _MenuScreenState extends State<MenuScreen> {
                                   ),
                                 )
                               : const Icon(Icons.fastfood, color: Colors.teal),
-                          title: Text(
-                            item['name'],
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          title: Text(item['name'],
+                              style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600)),
                           subtitle: Text(
-                            '\$${item['price'].toStringAsFixed(2)}',
-                            style: GoogleFonts.poppins(color: Colors.grey[600]),
-                          ),
+                              '\$${item['price'].toStringAsFixed(2)}',
+                              style:
+                                  GoogleFonts.poppins(color: Colors.grey[600])),
                           trailing: IconButton(
                             icon: const Icon(Icons.add_circle,
                                 color: Colors.teal),
@@ -201,44 +291,36 @@ class _MenuScreenState extends State<MenuScreen> {
           ),
         ],
       ),
-      floatingActionButton: _cart.isNotEmpty
-          ? FloatingActionButton.extended(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PaymentScreen(
-                    cartItems: _cart,
-                    totalAmount: _totalAmount,
-                  ),
-                ),
-              ),
-              backgroundColor: Colors.transparent,
-              elevation: 5,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              label: Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Colors.teal, Colors.tealAccent],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                child: Text(
-                  'Checkout (\$${_totalAmount.toStringAsFixed(2)})',
-                  style: GoogleFonts.poppins(
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (_cart.isNotEmpty)
+            FloatingActionButton.extended(
+              onPressed: _placeOrder,
+              label: Text(
+                'Place Order (\$${_totalAmount.toStringAsFixed(2)})',
+                style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                    color: Colors.white),
               ),
-            )
-          : null,
+              backgroundColor: Colors.teal,
+            ),
+          const SizedBox(width: 10),
+          FloatingActionButton.extended(
+            onPressed:
+                _showPhoneNumberDialog, // Show dialog instead of direct navigation
+            label: Text(
+              'Go to Payment',
+              style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
+            ),
+            backgroundColor: Colors.teal,
+          ),
+        ],
+      ),
     );
   }
 
@@ -247,60 +329,39 @@ class _MenuScreenState extends State<MenuScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Your Cart',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.bold,
-            color: Colors.teal,
-          ),
-        ),
+        title: Text('Your Cart',
+            style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold, color: Colors.teal)),
         content: SizedBox(
           width: double.maxFinite,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (_cart.isEmpty)
-                Text(
-                  'Cart is empty',
-                  style: GoogleFonts.poppins(color: Colors.grey),
-                )
-              else
-                ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _cart.length,
-                  itemBuilder: (context, index) {
-                    final item = _cart[index];
-                    return ListTile(
-                      title: Text(
-                        item['name'],
-                        style: GoogleFonts.poppins(),
-                      ),
-                      subtitle: Text(
-                        'Qty: ${item['quantity']}',
-                        style: GoogleFonts.poppins(color: Colors.grey[600]),
-                      ),
-                      trailing: Text(
+              ListView.builder(
+                shrinkWrap: true,
+                itemCount: _cart.length,
+                itemBuilder: (context, index) {
+                  final item = _cart[index];
+                  return ListTile(
+                    title: Text(item['name'], style: GoogleFonts.poppins()),
+                    subtitle: Text('Qty: ${item['quantity']}',
+                        style: GoogleFonts.poppins(color: Colors.grey[600])),
+                    trailing: Text(
                         '\$${(item['price'] * item['quantity']).toStringAsFixed(2)}',
-                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                      ),
-                    );
-                  },
-                ),
+                        style:
+                            GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                  );
+                },
+              ),
               const Divider(),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Total:',
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    '\$${_totalAmount.toStringAsFixed(2)}',
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.teal,
-                    ),
-                  ),
+                  Text('Total:',
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                  Text('\$${_totalAmount.toStringAsFixed(2)}',
+                      style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold, color: Colors.teal)),
                 ],
               ),
             ],
@@ -309,33 +370,17 @@ class _MenuScreenState extends State<MenuScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Close',
-              style: GoogleFonts.poppins(color: Colors.teal),
-            ),
+            child:
+                Text('Close', style: GoogleFonts.poppins(color: Colors.teal)),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PaymentScreen(
-                    cartItems: _cart,
-                    totalAmount: _totalAmount,
-                  ),
-                ),
-              );
-            },
+            onPressed: _placeOrder,
+            child: Text('Place Order',
+                style: GoogleFonts.poppins(color: Colors.white)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.teal,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              'Proceed',
-              style: GoogleFonts.poppins(color: Colors.white),
+                  borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ],

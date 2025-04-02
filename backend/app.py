@@ -9,37 +9,50 @@ db = SQLAlchemy(app)
 
 # Models
 class Reservation(db.Model):
+    __tablename__ = 'reservation'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
     people = db.Column(db.Integer)
-    phone = db.Column(db.String(20))
+    # Add a unique constraint that PostgreSQL will recognize
+    phone = db.Column(db.String(20), unique=True)
     status = db.Column(db.String(20), default='pending')
+    
+    # Add an explicit unique constraint that PostgreSQL will use for foreign key references
+    __table_args__ = (db.UniqueConstraint('phone', name='unique_phone_constraint'),)
 
 class MenuItem(db.Model):
+    __tablename__ = 'menu_item'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
     category = db.Column(db.String(20))
     course = db.Column(db.String(20))
     price = db.Column(db.Float)
-    image_url = db.Column(db.String(200))  # Added image URL field
+    image_url = db.Column(db.String(200))
 
-class Order(db.Model):
+class Orders(db.Model):
+    __tablename__ = 'orders'
     id = db.Column(db.Integer, primary_key=True)
+    phone = db.Column(db.String(20), db.ForeignKey('reservation.phone'))
     items = db.Column(db.JSON)
     total = db.Column(db.Float)
     status = db.Column(db.String(20), default='pending')
 
 class Payment(db.Model):
+    __tablename__ = 'payment'
     id = db.Column(db.Integer, primary_key=True)
-    order_id = db.Column(db.Integer)
+    phone = db.Column(db.String(20), db.ForeignKey('reservation.phone'))
     amount = db.Column(db.Float)
     method = db.Column(db.String(20))
     status = db.Column(db.String(20), default='pending')
+
 
 # API Endpoints
 @app.route('/api/reservations', methods=['POST'])
 def create_reservation():
     data = request.json
+    existing_reservation = Reservation.query.filter_by(phone=data['phone']).first()
+    if existing_reservation:
+        return jsonify({'id': existing_reservation.id, 'message': 'Existing reservation found'}), 200
     reservation = Reservation(
         name=data['name'],
         people=data['people'],
@@ -58,33 +71,57 @@ def get_menu():
         'name': item.name,
         'price': item.price,
         'category': item.category,
-        'image_url': item.image_url  # Include image URL in response
+        'image_url': item.image_url
     } for item in items])
 
 @app.route('/api/orders', methods=['POST'])
 def create_order():
     data = request.json
-    order = Order(
+    order = Orders(
+        phone=data['phone'],
         items=data['items'],
         total=data['total'],
         status='pending'
     )
     db.session.add(order)
     db.session.commit()
-    return jsonify({'order_id': order.id}), 201
+    return jsonify({'order_id': order.id, 'phone': order.phone}), 201
+
+@app.route('/api/orders/<phone>', methods=['GET'])
+def get_orders(phone):
+    orders = Orders.query.filter_by(phone=phone, status='pending').all()
+    total_amount = sum(order.total for order in orders)
+    return jsonify({
+        'orders': [{
+            'id': order.id,
+            'phone': order.phone,  # Add phone
+            'items': order.items,
+            'total': order.total,
+            'status': order.status  # Add status
+        } for order in orders],
+        'total_amount': total_amount
+    })
 
 @app.route('/api/payments', methods=['POST'])
 def process_payment():
     data = request.json
+    phone = data['phone']
+    orders = Orders.query.filter_by(phone=phone, status='pending').all()
+    if not orders:
+        return jsonify({'status': 'error', 'message': 'No pending orders found'}), 400
+    
+    total_amount = sum(order.total for order in orders)
     payment = Payment(
-        order_id=data['order_id'],
-        amount=data['amount'],
+        phone=phone,
+        amount=total_amount,
         method=data['method'],
-        status='success'  # Simulated success
+        status='success'
     )
+    for order in orders:
+        order.status = 'completed'
     db.session.add(payment)
     db.session.commit()
-    return jsonify({'status': payment.status})
+    return jsonify({'status': payment.status, 'total_amount': total_amount})
 
 if __name__ == '__main__':
     with app.app_context():
