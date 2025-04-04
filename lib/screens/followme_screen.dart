@@ -1,12 +1,18 @@
-// TODO Implement this library.
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'speech_helper.dart'; // Import SpeechHelper
 
 class FollowMeScreen extends StatelessWidget {
   const FollowMeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Speak summary when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SpeechHelper.speak(
+          'This is the Follow Me screen. The robot is preparing to guide you to your table. Please wait and press Start Navigation when ready.');
+    });
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(

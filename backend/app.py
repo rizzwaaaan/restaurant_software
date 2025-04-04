@@ -65,12 +65,19 @@ def create_reservation():
 @app.route('/api/menu', methods=['GET'])
 def get_menu():
     category = request.args.get('category')
-    items = MenuItem.query.filter_by(category=category).all()
+    course = request.args.get('course')
+    
+    query = MenuItem.query.filter_by(category=category)
+    if course and course != 'all':
+        query = query.filter_by(course=course)
+    
+    items = query.all()
     return jsonify([{
         'id': item.id,
         'name': item.name,
         'price': item.price,
         'category': item.category,
+        'course': item.course,  # Include course in response
         'image_url': item.image_url
     } for item in items])
 

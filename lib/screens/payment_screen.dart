@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:restaurant/models/orders.dart'; // Import the updated Order model
+import 'package:restaurant/models/orders.dart';
+import 'speech_helper.dart'; // Import SpeechHelper
 
 class PaymentScreen extends StatefulWidget {
   final String phoneNumber;
@@ -120,6 +121,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.initState();
     _phoneController.text = widget.phoneNumber;
     _fetchOrders(widget.phoneNumber);
+    SpeechHelper.speak(
+        'This is the Payment Screen. Review your orders, select a payment method, and confirm your payment.');
   }
 
   @override

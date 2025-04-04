@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'reservation_check_screen.dart';
+import 'speech_helper.dart'; // Import SpeechHelper
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -32,12 +33,18 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    SpeechHelper.speak(
+        'Welcome to the Smart Restaurant. This is the Welcome Screen showcasing our delicious offerings. Tap anywhere to proceed to reservation check.');
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: GestureDetector(
         onTap: () {
-          // Navigate directly to Reservation Check Screen
           Navigator.push(
             context,
             MaterialPageRoute(

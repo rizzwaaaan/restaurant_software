@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
-import 'menu_screen.dart'; // Ensure this import points to your updated MenuScreen
+import 'menu_screen.dart';
+import 'speech_helper.dart'; // Import SpeechHelper
 
 class ReservationScreen extends StatefulWidget {
   final String? initialPhoneNumber;
@@ -25,10 +26,11 @@ class _ReservationScreenState extends State<ReservationScreen> {
     _nameController = TextEditingController();
     _phoneController = TextEditingController();
 
-    // Set initial phone number if provided
     if (widget.initialPhoneNumber != null) {
       _phoneController.text = widget.initialPhoneNumber!;
     }
+    SpeechHelper.speak(
+        'This is the Reservation Screen. Enter your name, phone number, and number of guests to book a table.');
   }
 
   Future<void> _submitReservation() async {
@@ -45,7 +47,6 @@ class _ReservationScreenState extends State<ReservationScreen> {
         );
 
         if (response.statusCode == 201 || response.statusCode == 200) {
-          // Navigate to MenuScreen with phone number after successful reservation
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -99,7 +100,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100], // Soft neutral background
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text(
           'Table Reservation',
@@ -211,7 +212,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                     ElevatedButton(
                       onPressed: _submitReservation,
                       style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.zero, // Remove default padding
+                        padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

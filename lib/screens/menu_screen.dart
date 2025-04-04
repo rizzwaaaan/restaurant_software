@@ -3,10 +3,11 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'payment_screen.dart';
-import 'package:restaurant/models/orders.dart'; // Import the existing Order model
+import 'package:restaurant/models/orders.dart';
+import 'speech_helper.dart'; // Import SpeechHelper
 
 class MenuScreen extends StatefulWidget {
-  final String? phoneNumber; // Keep as nullable since it might not be provided
+  final String? phoneNumber;
   const MenuScreen({super.key, this.phoneNumber});
 
   @override
@@ -16,13 +17,14 @@ class MenuScreen extends StatefulWidget {
 class _MenuScreenState extends State<MenuScreen> {
   List<dynamic> _menuItems = [];
   String _selectedCategory = 'veg';
+  String _selectedCourse = 'all'; // Added course selection
   final List<Map<String, dynamic>> _cart = [];
 
   Future<void> _loadMenu() async {
     try {
-      final response = await http.get(
-        Uri.parse('http://localhost:5000/api/menu?category=$_selectedCategory'),
-      );
+      final uri = Uri.parse(
+          'http://localhost:5000/api/menu?category=$_selectedCategory${_selectedCourse != 'all' ? '&course=$_selectedCourse' : ''}');
+      final response = await http.get(uri);
       if (response.statusCode == 200) {
         setState(() => _menuItems = json.decode(response.body));
       }
@@ -44,7 +46,7 @@ class _MenuScreenState extends State<MenuScreen> {
       return;
     }
     final order = Order(
-      id: 0, // ID will be assigned by backend
+      id: 0,
       phone: widget.phoneNumber!,
       items: _cart,
       total: _totalAmount,
@@ -94,12 +96,10 @@ class _MenuScreenState extends State<MenuScreen> {
         0, (sum, item) => sum + (item['price'] * item['quantity']));
   }
 
-  // New method to show phone number input dialog
   void _showPhoneNumberDialog() {
     final TextEditingController phoneController = TextEditingController();
     final _formKey = GlobalKey<FormState>();
 
-    // Pre-fill with existing phone number if available
     if (widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty) {
       phoneController.text = widget.phoneNumber!;
     }
@@ -146,8 +146,7 @@ class _MenuScreenState extends State<MenuScreen> {
           ElevatedButton(
             onPressed: () {
               if (_formKey.currentState!.validate()) {
-                Navigator.pop(context); // Close the dialog
-                // Navigate to PaymentScreen with the entered phone number
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -175,6 +174,8 @@ class _MenuScreenState extends State<MenuScreen> {
   void initState() {
     super.initState();
     _loadMenu();
+    SpeechHelper.speak(
+        'This is the Menu Screen. Browse vegetarian or non-vegetarian items by course - appetizers, main courses, or desserts. Add them to your cart and place your order or proceed to payment.');
   }
 
   @override
@@ -219,28 +220,65 @@ class _MenuScreenState extends State<MenuScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: SegmentedButton<String>(
-              segments: [
-                ButtonSegment(
-                    value: 'veg',
-                    label: Text('Vegetarian', style: GoogleFonts.poppins())),
-                ButtonSegment(
-                    value: 'non-veg',
-                    label: Text('Non-Veg', style: GoogleFonts.poppins())),
+            child: Column(
+              children: [
+                SegmentedButton<String>(
+                  segments: [
+                    ButtonSegment(
+                        value: 'veg',
+                        label:
+                            Text('Vegetarian', style: GoogleFonts.poppins())),
+                    ButtonSegment(
+                        value: 'non-veg',
+                        label: Text('Non-Veg', style: GoogleFonts.poppins())),
+                  ],
+                  selected: {_selectedCategory},
+                  onSelectionChanged: (newSelection) {
+                    setState(() {
+                      _selectedCategory = newSelection.first;
+                      _loadMenu();
+                    });
+                  },
+                  style: SegmentedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.teal,
+                    selectedForegroundColor: Colors.white,
+                    selectedBackgroundColor: Colors.teal,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SegmentedButton<String>(
+                  segments: [
+                    ButtonSegment(
+                        value: 'all',
+                        label: Text('All', style: GoogleFonts.poppins())),
+                    ButtonSegment(
+                        value: 'appetizer',
+                        label:
+                            Text('Appetizers', style: GoogleFonts.poppins())),
+                    ButtonSegment(
+                        value: 'main',
+                        label:
+                            Text('Main Course', style: GoogleFonts.poppins())),
+                    ButtonSegment(
+                        value: 'dessert',
+                        label: Text('Desserts', style: GoogleFonts.poppins())),
+                  ],
+                  selected: {_selectedCourse},
+                  onSelectionChanged: (newSelection) {
+                    setState(() {
+                      _selectedCourse = newSelection.first;
+                      _loadMenu();
+                    });
+                  },
+                  style: SegmentedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.teal,
+                    selectedForegroundColor: Colors.white,
+                    selectedBackgroundColor: Colors.teal,
+                  ),
+                ),
               ],
-              selected: {_selectedCategory},
-              onSelectionChanged: (newSelection) {
-                setState(() {
-                  _selectedCategory = newSelection.first;
-                  _loadMenu();
-                });
-              },
-              style: SegmentedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.teal,
-                selectedForegroundColor: Colors.white,
-                selectedBackgroundColor: Colors.teal,
-              ),
             ),
           ),
           Expanded(
@@ -308,8 +346,7 @@ class _MenuScreenState extends State<MenuScreen> {
             ),
           const SizedBox(width: 10),
           FloatingActionButton.extended(
-            onPressed:
-                _showPhoneNumberDialog, // Show dialog instead of direct navigation
+            onPressed: _showPhoneNumberDialog,
             label: Text(
               'Go to Payment',
               style: GoogleFonts.poppins(

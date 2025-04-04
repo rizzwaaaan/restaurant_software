@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:google_fonts/google_fonts.dart';
 import 'followme_screen.dart';
 import 'reservation_screen.dart';
-// ignore: unused_import
-import 'menu_screen.dart';
+import 'speech_helper.dart'; // Import SpeechHelper
 
 class ReservationCheckScreen extends StatefulWidget {
   const ReservationCheckScreen({super.key});
@@ -39,13 +38,11 @@ class _ReservationCheckScreenState extends State<ReservationCheckScreen> {
           final reservation = json.decode(response.body);
 
           if (reservation['exists']) {
-            // Reservation found, navigate to Follow Me screen
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (_) => const FollowMeScreen()),
             );
           } else {
-            // No reservation found, navigate to Reservation screen
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
@@ -56,7 +53,6 @@ class _ReservationCheckScreenState extends State<ReservationCheckScreen> {
             );
           }
         } else {
-          // Error checking reservation
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -93,6 +89,13 @@ class _ReservationCheckScreenState extends State<ReservationCheckScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    SpeechHelper.speak(
+        'This is the Reservation Check Screen. Enter your phone number to check an existing reservation or make a new one.');
   }
 
   @override

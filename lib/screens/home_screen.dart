@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 import 'reservation_screen.dart';
 import 'menu_screen.dart';
-import 'package:google_fonts/google_fonts.dart'; // Add this dependency
+import 'package:google_fonts/google_fonts.dart';
+import 'speech_helper.dart'; // Import SpeechHelper
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SpeechHelper.speak(
+          'Welcome to the Home Screen of the Smart Restaurant System. Choose to make a reservation or start ordering from the menu.');
+    });
+
     return Scaffold(
-      backgroundColor: Colors.grey[100], // Soft neutral background
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text(
           'Smart Restaurant System',
@@ -66,8 +72,8 @@ class HomeScreen extends StatelessWidget {
       onPressed: () =>
           Navigator.push(context, MaterialPageRoute(builder: (_) => screen)),
       style: ElevatedButton.styleFrom(
-        padding: EdgeInsets.zero, // Remove default padding for gradient
-        minimumSize: const Size(250, 60), // Larger button size
+        padding: EdgeInsets.zero,
+        minimumSize: const Size(250, 60),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
