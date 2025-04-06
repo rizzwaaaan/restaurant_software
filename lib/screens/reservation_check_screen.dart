@@ -26,25 +26,28 @@ class _ReservationCheckScreenState extends State<ReservationCheckScreen> {
           Uri.parse(
               'http://localhost:5000/api/check-reservation?phone=${_phoneController.text}'),
         );
+        print('API Response: ${response.body}'); // Debug response
         setState(() => _isLoading = false);
 
         if (response.statusCode == 200) {
           final reservation = json.decode(response.body);
+          bool isPresent = reservation['present'] == 'yes';
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => reservation['exists']
+              builder: (_) => isPresent
                   ? const FollowMeScreen()
                   : ReservationScreen(
                       initialPhoneNumber: _phoneController.text),
             ),
           );
         } else {
-          _showErrorSnackBar('Error checking reservation');
+          _showErrorSnackBar(
+              'Error checking reservation: ${response.statusCode} - ${response.body}');
         }
       } catch (e) {
         setState(() => _isLoading = false);
-        _showErrorSnackBar('Network error');
+        _showErrorSnackBar('Network error: $e');
       }
     }
   }
@@ -89,103 +92,117 @@ class _ReservationCheckScreenState extends State<ReservationCheckScreen> {
         child: SafeArea(
           child: Stack(
             children: [
-              Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Card(
-                    elevation: 15,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(30),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Check Reservation',
-                              style: GoogleFonts.poppins(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.teal.shade700,
-                              ),
-                            ),
-                            const SizedBox(height: 30),
-                            TextFormField(
-                              controller: _phoneController,
-                              decoration: InputDecoration(
-                                labelText: 'Phone Number',
-                                labelStyle: GoogleFonts.poppins(
-                                    color: Colors.teal.shade700),
-                                prefixIcon: Icon(Icons.phone,
-                                    color: Colors.teal.shade700),
-                                filled: true,
-                                fillColor: Colors.white.withOpacity(0.9),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: BorderSide.none,
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide:
-                                      BorderSide(color: Colors.teal.shade700),
-                                ),
-                              ),
-                              style: GoogleFonts.poppins(),
-                              keyboardType: TextInputType.phone,
-                              validator: (value) =>
-                                  value!.isEmpty || value.length < 10
-                                      ? 'Invalid phone number'
-                                      : null,
-                            ),
-                            const SizedBox(height: 40),
-                            _isLoading
-                                ? CircularProgressIndicator(
-                                    color: Colors.teal.shade700)
-                                : Column(
-                                    children: [
-                                      ElevatedButton(
-                                        onPressed: _checkReservation,
-                                        style: ElevatedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 15),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(15),
-                                          ),
-                                          elevation: 5,
-                                          backgroundColor: Colors.teal.shade700,
-                                        ),
-                                        child: Text(
-                                          'Check Reservation',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 20),
-                                      TextButton(
-                                        onPressed: _navigateToReservation,
-                                        child: Text(
-                                          'Make New Reservation',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 16,
-                                            color: Colors.teal.shade700,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+              Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Card(
+                        elevation: 15,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25)),
+                        color: Colors.white.withOpacity(0.9),
+                        child: Padding(
+                          padding: const EdgeInsets.all(30),
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Check Reservation',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.teal.shade700,
                                   ),
-                          ],
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 30),
+                                TextFormField(
+                                  controller: _phoneController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Phone Number',
+                                    labelStyle: GoogleFonts.poppins(
+                                        color: Colors.teal.shade700),
+                                    prefixIcon: Icon(Icons.phone,
+                                        color: Colors.teal.shade700),
+                                    filled: true,
+                                    fillColor: Colors.white.withOpacity(0.9),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide(
+                                          color: Colors.teal.shade700),
+                                    ),
+                                  ),
+                                  style: GoogleFonts.poppins(),
+                                  keyboardType: TextInputType.phone,
+                                  validator: (value) =>
+                                      value!.isEmpty || value.length < 10
+                                          ? 'Invalid phone number'
+                                          : null,
+                                ),
+                                const SizedBox(height: 40),
+                                _isLoading
+                                    ? CircularProgressIndicator(
+                                        color: Colors.teal.shade700)
+                                    : Column(
+                                        children: [
+                                          ElevatedButton(
+                                            onPressed: _checkReservation,
+                                            style: ElevatedButton.styleFrom(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 15),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(15),
+                                              ),
+                                              elevation: 5,
+                                              backgroundColor:
+                                                  Colors.teal.shade700,
+                                            ),
+                                            child: Text(
+                                              'Check Reservation',
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 20),
+                                          TextButton(
+                                            onPressed: _navigateToReservation,
+                                            child: Text(
+                                              'Make New Reservation',
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 16,
+                                                color: Colors.teal.shade700,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                const SizedBox(height: 20),
+                                Text(
+                                  'Smart Restaurant © 2025',
+                                  style: GoogleFonts.poppins(
+                                      color: Colors.grey[600]),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
               Positioned(
                 bottom: 20,

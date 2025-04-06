@@ -9,15 +9,17 @@ db = SQLAlchemy(app)
 
 # Models
 class Reservation(db.Model):
-    __tablename__ = 'reservation'
+    __tablename__ = 'reservations'  # Corrected to match PostgreSQL table name
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100))
-    people = db.Column(db.Integer)
-    # Add a unique constraint that PostgreSQL will recognize
-    phone = db.Column(db.String(20), unique=True)
+    name = db.Column(db.String(100), nullable=False)
+    people = db.Column(db.Integer, nullable=False, default=1)
+    phone = db.Column(db.String(20), unique=True, nullable=False)
     status = db.Column(db.String(20), default='pending')
-    
-    # Add an explicit unique constraint that PostgreSQL will use for foreign key references
+    present = db.Column(db.String(3), default='no', nullable=False)
+    reservation_date = db.Column(db.DateTime, default=db.func.current_timestamp())
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+
     __table_args__ = (db.UniqueConstraint('phone', name='unique_phone_constraint'),)
 
 class MenuItem(db.Model):
@@ -32,7 +34,7 @@ class MenuItem(db.Model):
 class Orders(db.Model):
     __tablename__ = 'orders'
     id = db.Column(db.Integer, primary_key=True)
-    phone = db.Column(db.String(20), db.ForeignKey('reservation.phone'))
+    phone = db.Column(db.String(20), db.ForeignKey('reservations.phone'))
     items = db.Column(db.JSON)
     total = db.Column(db.Float)
     status = db.Column(db.String(20), default='pending')
@@ -40,11 +42,10 @@ class Orders(db.Model):
 class Payment(db.Model):
     __tablename__ = 'payment'
     id = db.Column(db.Integer, primary_key=True)
-    phone = db.Column(db.String(20), db.ForeignKey('reservation.phone'))
+    phone = db.Column(db.String(20), db.ForeignKey('reservations.phone'))
     amount = db.Column(db.Float)
     method = db.Column(db.String(20))
     status = db.Column(db.String(20), default='pending')
-
 
 # API Endpoints
 @app.route('/api/reservations', methods=['POST'])
@@ -52,22 +53,62 @@ def create_reservation():
     data = request.json
     existing_reservation = Reservation.query.filter_by(phone=data['phone']).first()
     if existing_reservation:
-        return jsonify({'id': existing_reservation.id, 'message': 'Existing reservation found'}), 200
+        return jsonify({
+            'id': existing_reservation.id,
+            'message': 'Existing reservation found',
+            'present': existing_reservation.present
+        }), 200
     reservation = Reservation(
         name=data['name'],
         people=data['people'],
-        phone=data['phone']
+        phone=data['phone'],
+        present=data.get('present', 'no')  # Allow client to set 'present' if needed
     )
     db.session.add(reservation)
     db.session.commit()
-    return jsonify({'id': reservation.id}), 201
+    return jsonify({
+        'id': reservation.id,
+        'present': reservation.present,
+        'status': reservation.status
+    }), 201
+
+@app.route('/api/check-reservation', methods=['GET'])
+def check_reservation():
+    phone = request.args.get('phone')
+    if not phone:
+        return jsonify({'error': 'Phone number is required'}), 400
+    
+    reservation = Reservation.query.filter_by(phone=phone).first()
+    if reservation:
+        return jsonify({
+            'id': reservation.id,
+            'name': reservation.name,
+            'people': reservation.people,
+            'phone': reservation.phone,
+            'status': reservation.status,
+            'present': reservation.present,
+            'reservation_date': reservation.reservation_date.isoformat(),
+            'created_at': reservation.created_at.isoformat(),
+            'updated_at': reservation.updated_at.isoformat()
+        }), 200
+    return jsonify({'present': 'no', 'message': 'No reservation found'}), 404
+
+@app.route('/api/reservations/<phone>/status', methods=['PUT'])
+def update_reservation_status(phone):
+    reservation = Reservation.query.filter_by(phone=phone).first_or_404()
+    data = request.json
+    reservation.status = data.get('status', reservation.status)
+    db.session.commit()
+    return jsonify({'message': 'Status updated', 'status': reservation.status}), 200
 
 @app.route('/api/menu', methods=['GET'])
 def get_menu():
     category = request.args.get('category')
     course = request.args.get('course')
     
-    query = MenuItem.query.filter_by(category=category)
+    query = MenuItem.query
+    if category:
+        query = query.filter_by(category=category)
     if course and course != 'all':
         query = query.filter_by(course=course)
     
@@ -77,7 +118,7 @@ def get_menu():
         'name': item.name,
         'price': item.price,
         'category': item.category,
-        'course': item.course,  # Include course in response
+        'course': item.course,
         'image_url': item.image_url
     } for item in items])
 
@@ -101,10 +142,10 @@ def get_orders(phone):
     return jsonify({
         'orders': [{
             'id': order.id,
-            'phone': order.phone,  # Add phone
+            'phone': order.phone,
             'items': order.items,
             'total': order.total,
-            'status': order.status  # Add status
+            'status': order.status
         } for order in orders],
         'total_amount': total_amount
     })
@@ -126,6 +167,9 @@ def process_payment():
     )
     for order in orders:
         order.status = 'completed'
+    reservation = Reservation.query.filter_by(phone=phone).first()
+    if reservation:
+        reservation.status = 'completed'  # Update reservation status on payment success
     db.session.add(payment)
     db.session.commit()
     return jsonify({'status': payment.status, 'total_amount': total_amount})

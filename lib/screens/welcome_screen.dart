@@ -15,21 +15,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   int _currentPage = 0;
 
   final List<Map<String, String>> _foodItems = [
-    {
-      'image': 'assets/food1.jpg',
-      'name': 'Delicious Pasta',
-      'description': 'Creamy Italian Specialty'
-    },
-    {
-      'image': 'assets/food2.jpg',
-      'name': 'Gourmet Burger',
-      'description': 'Juicy Beef Burger'
-    },
-    {
-      'image': 'assets/food3.jpg',
-      'name': 'Fresh Salad',
-      'description': 'Healthy Green Mix'
-    },
+    {'image': 'assets/food1.jpg', 'name': '', 'description': ''},
+    {'image': 'assets/food2.jpg', 'name': '', 'description': ''},
+    {'image': 'assets/food3.jpg', 'name': '', 'description': ''},
   ];
 
   @override

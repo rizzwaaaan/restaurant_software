@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:restaurant/models/reservation.dart';
 import 'menu_screen.dart';
 import 'speech_helper.dart';
 
@@ -15,50 +16,55 @@ class ReservationScreen extends StatefulWidget {
 
 class _ReservationScreenState extends State<ReservationScreen> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _nameController;
-  late TextEditingController _phoneController;
-  int _people = 2;
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _peopleController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
-    _phoneController = TextEditingController(text: widget.initialPhoneNumber);
+    _phoneController.text = widget.initialPhoneNumber ?? '';
     SpeechHelper.speak(
-        'This is the Reservation Screen. Enter your details to book a table.');
+        'This is the Reservation Screen. Enter your details to make a reservation.');
   }
 
   Future<void> _submitReservation() async {
     if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      final reservation = Reservation(
+        name: _nameController.text,
+        people: int.parse(_peopleController.text),
+        phone: _phoneController.text,
+      );
       try {
         final response = await http.post(
           Uri.parse('http://localhost:5000/api/reservations'),
           headers: {'Content-Type': 'application/json'},
-          body: json.encode({
-            'name': _nameController.text,
-            'people': _people,
-            'phone': _phoneController.text,
-          }),
+          body: json.encode(reservation.toJson()),
         );
+        setState(() => _isLoading = false);
 
-        if (response.statusCode == 201 || response.statusCode == 200) {
+        if (response.statusCode == 201) {
+          final data = json.decode(response.body);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Reservation created successfully!',
+                  style: GoogleFonts.poppins()),
+              backgroundColor: Colors.green,
+            ),
+          );
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (_) => MenuScreen(phoneNumber: _phoneController.text),
             ),
           );
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content:
-                  Text('Reservation successful!', style: GoogleFonts.poppins()),
-              backgroundColor: Colors.green,
-            ),
-          );
         } else {
-          _showErrorSnackBar('Reservation failed');
+          _showErrorSnackBar('Failed to create reservation: ${response.body}');
         }
       } catch (e) {
+        setState(() => _isLoading = false);
         _showErrorSnackBar('Error: $e');
       }
     }
@@ -79,84 +85,163 @@ class _ReservationScreenState extends State<ReservationScreen> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.teal.shade600, Colors.teal.shade100],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.teal.shade600, Colors.teal.shade200],
           ),
         ),
         child: SafeArea(
           child: Stack(
             children: [
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Card(
-                  elevation: 15,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(30),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Book Your Table',
-                            style: GoogleFonts.poppins(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.teal.shade700,
+              Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Card(
+                        elevation: 15,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25)),
+                        color: Colors.white.withOpacity(0.9),
+                        child: Padding(
+                          padding: const EdgeInsets.all(30),
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Make Reservation',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.teal.shade700,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 30),
+                                TextFormField(
+                                  controller: _nameController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Full Name',
+                                    labelStyle: GoogleFonts.poppins(
+                                        color: Colors.teal.shade700),
+                                    prefixIcon: Icon(Icons.person,
+                                        color: Colors.teal.shade700),
+                                    filled: true,
+                                    fillColor: Colors.white.withOpacity(0.9),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide(
+                                          color: Colors.teal.shade700),
+                                    ),
+                                  ),
+                                  style: GoogleFonts.poppins(),
+                                  validator: (value) => value!.isEmpty
+                                      ? 'Please enter your name'
+                                      : null,
+                                ),
+                                const SizedBox(height: 20),
+                                TextFormField(
+                                  controller: _phoneController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Phone Number',
+                                    labelStyle: GoogleFonts.poppins(
+                                        color: Colors.teal.shade700),
+                                    prefixIcon: Icon(Icons.phone,
+                                        color: Colors.teal.shade700),
+                                    filled: true,
+                                    fillColor: Colors.white.withOpacity(0.9),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide(
+                                          color: Colors.teal.shade700),
+                                    ),
+                                  ),
+                                  style: GoogleFonts.poppins(),
+                                  keyboardType: TextInputType.phone,
+                                  validator: (value) =>
+                                      value!.isEmpty || value.length < 10
+                                          ? 'Invalid phone number'
+                                          : null,
+                                ),
+                                const SizedBox(height: 20),
+                                TextFormField(
+                                  controller: _peopleController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Number of People',
+                                    labelStyle: GoogleFonts.poppins(
+                                        color: Colors.teal.shade700),
+                                    prefixIcon: Icon(Icons.group,
+                                        color: Colors.teal.shade700),
+                                    filled: true,
+                                    fillColor: Colors.white.withOpacity(0.9),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide(
+                                          color: Colors.teal.shade700),
+                                    ),
+                                  ),
+                                  style: GoogleFonts.poppins(),
+                                  keyboardType: TextInputType.number,
+                                  validator: (value) =>
+                                      value!.isEmpty || int.parse(value) <= 0
+                                          ? 'Please enter a valid number'
+                                          : null,
+                                ),
+                                const SizedBox(height: 40),
+                                _isLoading
+                                    ? CircularProgressIndicator(
+                                        color: Colors.teal.shade700)
+                                    : ElevatedButton(
+                                        onPressed: _submitReservation,
+                                        style: ElevatedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 15),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(15),
+                                          ),
+                                          elevation: 5,
+                                          backgroundColor: Colors.teal.shade700,
+                                        ),
+                                        child: Text(
+                                          'Make Reservation',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                const SizedBox(height: 20),
+                                Text(
+                                  'Smart Restaurant © 2025',
+                                  style: GoogleFonts.poppins(
+                                      color: Colors.grey[600]),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 30),
-                          _buildTextField(
-                              _nameController, 'Name', Icons.person),
-                          const SizedBox(height: 20),
-                          _buildTextField(
-                              _phoneController, 'Phone Number', Icons.phone,
-                              keyboardType: TextInputType.phone),
-                          const SizedBox(height: 20),
-                          DropdownButtonFormField<int>(
-                            value: _people,
-                            decoration: _inputDecoration(
-                                'Number of Guests', Icons.people),
-                            style: GoogleFonts.poppins(color: Colors.black),
-                            items: List.generate(
-                              10,
-                              (i) => DropdownMenuItem(
-                                value: i + 1,
-                                child: Text(
-                                    '${i + 1} ${i == 0 ? 'person' : 'people'}'),
-                              ),
-                            ),
-                            onChanged: (value) =>
-                                setState(() => _people = value!),
-                          ),
-                          const SizedBox(height: 40),
-                          ElevatedButton(
-                            onPressed: _submitReservation,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 15, horizontal: 40),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15)),
-                              elevation: 5,
-                              backgroundColor: Colors.teal.shade700,
-                            ),
-                            child: Text(
-                              'Confirm Reservation',
-                              style: GoogleFonts.poppins(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
               Positioned(
                 bottom: 20,
@@ -171,39 +256,6 @@ class _ReservationScreenState extends State<ReservationScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTextField(
-      TextEditingController controller, String label, IconData icon,
-      {TextInputType? keyboardType}) {
-    return TextFormField(
-      controller: controller,
-      decoration: _inputDecoration(label, icon),
-      style: GoogleFonts.poppins(),
-      keyboardType: keyboardType,
-      validator: (value) =>
-          value!.isEmpty || (label == 'Phone Number' && value.length < 10)
-              ? 'Invalid'
-              : null,
-    );
-  }
-
-  InputDecoration _inputDecoration(String label, IconData icon) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: GoogleFonts.poppins(color: Colors.teal.shade700),
-      prefixIcon: Icon(icon, color: Colors.teal.shade700),
-      filled: true,
-      fillColor: Colors.white.withOpacity(0.9),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide(color: Colors.teal.shade700),
       ),
     );
   }
