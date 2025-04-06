@@ -14,6 +14,7 @@ dependencies:
   carousel_slider: ^4.2.1
   google_fonts: ^6.1.0 
   flutter_tts: ^4.0.2
+  flutter_dotenv: ^5.0.2
 
 dev_dependencies:
   flutter_test:
@@ -25,3 +26,4 @@ flutter:
     - assets/food1.jpg
     - assets/food2.jpg
     - assets/food3.jpg
+    - .env

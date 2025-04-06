@@ -1,94 +1,127 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'speech_helper.dart'; // Import SpeechHelper
+import 'speech_helper.dart';
 
 class FollowMeScreen extends StatelessWidget {
   const FollowMeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Speak summary when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       SpeechHelper.speak(
-          'This is the Follow Me screen. The robot is preparing to guide you to your table. Please wait and press Start Navigation when ready.');
+          'This is the Follow Me screen. The robot is preparing to guide you to your table.');
     });
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: Text(
-          'Follow Me',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            color: Colors.white,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.teal.shade700, Colors.teal.shade200],
           ),
         ),
-        backgroundColor: Colors.teal,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.restaurant_outlined,
-              size: 100,
-              color: Colors.teal,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Robot is preparing to guide you',
-              style: GoogleFonts.poppins(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.teal,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Please wait while our robot assistant\nprepares to escort you',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                color: Colors.grey[700],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: () {
-                // You can add robot navigation logic here in the future
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Robot navigation in progress',
-                      style: GoogleFonts.poppins(),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.directions_walk,
+                        size: 100,
+                        color: Colors.white,
+                      ),
                     ),
-                    backgroundColor: Colors.teal,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 30,
-                  vertical: 15,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 30),
+                    Text(
+                      'Follow the Robot',
+                      style: GoogleFonts.poppins(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black26,
+                            offset: Offset(2, 2),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Text(
+                        'Preparing to guide you to your table',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          color: Colors.teal.shade700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    ElevatedButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Robot navigation in progress',
+                                style: GoogleFonts.poppins()),
+                            backgroundColor: Colors.teal.shade700,
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 40, vertical: 15),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15)),
+                        elevation: 5,
+                        backgroundColor: Colors.white,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.play_arrow, color: Colors.teal.shade700),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Start Navigation',
+                            style: GoogleFonts.poppins(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.teal.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Text(
-                'Start Navigation',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  color: Colors.white,
-                ),
+              Positioned(
+                bottom: 20,
+                left: 20,
+                child: Navigator.canPop(context)
+                    ? IconButton(
+                        icon: Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      )
+                    : SizedBox.shrink(),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

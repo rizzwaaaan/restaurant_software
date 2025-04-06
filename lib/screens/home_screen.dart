@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'reservation_screen.dart';
 import 'menu_screen.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'speech_helper.dart'; // Import SpeechHelper
+import 'reservation_check_screen.dart';
+import 'speech_helper.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -11,94 +12,112 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       SpeechHelper.speak(
-          'Welcome to the Home Screen of the Smart Restaurant System. Choose to make a reservation or start ordering from the menu.');
+          'Welcome to the Home Screen of the Smart Restaurant System. Choose to check your reservation, view the menu, or make a new reservation.');
     });
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: Text(
-          'Smart Restaurant System',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            color: Colors.white,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.teal.shade700, Colors.teal.shade200],
           ),
         ),
-        backgroundColor: Colors.teal,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Welcome!',
-              style: GoogleFonts.poppins(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.teal,
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Smart Restaurant',
+                      style: GoogleFonts.poppins(
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black26,
+                            offset: Offset(2, 2),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    Text(
+                      'Your dining experience awaits',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 60),
+                    _buildActionButton(
+                      context,
+                      'Check Reservation',
+                      const ReservationCheckScreen(),
+                      Icons.check,
+                    ),
+                    const SizedBox(height: 30),
+                    _buildActionButton(
+                      context,
+                      'Check Menu',
+                      const MenuScreen(),
+                      Icons.restaurant_menu,
+                    ),
+                    const SizedBox(height: 30),
+                    _buildActionButton(
+                      context,
+                      'Make Reservation',
+                      const ReservationScreen(),
+                      Icons.book,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Choose an option below',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                color: Colors.grey[600],
+              Positioned(
+                top: 20,
+                left: 20,
+                child: IconButton(
+                  icon: Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
               ),
-            ),
-            const SizedBox(height: 40),
-            _buildActionButton(
-              context,
-              'Make Reservation',
-              const ReservationScreen(),
-            ),
-            const SizedBox(height: 30),
-            _buildActionButton(
-              context,
-              'Start Ordering',
-              const MenuScreen(),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildActionButton(BuildContext context, String text, Widget screen) {
+  Widget _buildActionButton(
+      BuildContext context, String text, Widget screen, IconData icon) {
     return ElevatedButton(
       onPressed: () =>
           Navigator.push(context, MaterialPageRoute(builder: (_) => screen)),
       style: ElevatedButton.styleFrom(
-        padding: EdgeInsets.zero,
-        minimumSize: const Size(250, 60),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        elevation: 5,
+        padding: const EdgeInsets.all(20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 10,
+        backgroundColor: Colors.white,
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Colors.teal, Colors.tealAccent],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 15),
-        child: Center(
-          child: Text(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.teal.shade700, size: 30),
+          const SizedBox(width: 15),
+          Text(
             text,
             style: GoogleFonts.poppins(
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Colors.teal.shade700,
             ),
           ),
-        ),
+        ],
       ),
     );
   }

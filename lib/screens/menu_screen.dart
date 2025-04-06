@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'payment_screen.dart';
 import 'package:restaurant/models/orders.dart';
-import 'speech_helper.dart'; // Import SpeechHelper
+import 'speech_helper.dart';
 
 class MenuScreen extends StatefulWidget {
   final String? phoneNumber;
@@ -17,7 +17,7 @@ class MenuScreen extends StatefulWidget {
 class _MenuScreenState extends State<MenuScreen> {
   List<dynamic> _menuItems = [];
   String _selectedCategory = 'veg';
-  String _selectedCourse = 'all'; // Added course selection
+  String _selectedCourse = 'all';
   final List<Map<String, dynamic>> _cart = [];
 
   Future<void> _loadMenu() async {
@@ -29,20 +29,17 @@ class _MenuScreenState extends State<MenuScreen> {
         setState(() => _menuItems = json.decode(response.body));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.redAccent),
-      );
+      _showErrorSnackBar('Error: $e');
     }
   }
 
   Future<void> _placeOrder() async {
-    if (_cart.isEmpty) return;
     if (widget.phoneNumber == null || widget.phoneNumber!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Phone number is required'),
-            backgroundColor: Colors.redAccent),
-      );
+      _showErrorSnackBar('Please make a reservation first');
+      return;
+    }
+    if (_cart.isEmpty) {
+      _showErrorSnackBar('Cart is empty');
       return;
     }
     final order = Order(
@@ -62,21 +59,16 @@ class _MenuScreenState extends State<MenuScreen> {
         setState(() => _cart.clear());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Order placed successfully!'),
+            content: Text('Order placed successfully!',
+                style: GoogleFonts.poppins()),
             backgroundColor: Colors.green,
           ),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Failed to place order'),
-              backgroundColor: Colors.redAccent),
-        );
+        _showErrorSnackBar('Failed to place order');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.redAccent),
-      );
+      _showErrorSnackBar('Error: $e');
     }
   }
 
@@ -86,7 +78,7 @@ class _MenuScreenState extends State<MenuScreen> {
         'id': item['id'],
         'name': item['name'],
         'price': item['price'],
-        'quantity': 1,
+        'quantity': 1
       });
     });
   }
@@ -97,75 +89,23 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   void _showPhoneNumberDialog() {
-    final TextEditingController phoneController = TextEditingController();
-    final _formKey = GlobalKey<FormState>();
-
-    if (widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty) {
-      phoneController.text = widget.phoneNumber!;
+    if (widget.phoneNumber == null || widget.phoneNumber!.isEmpty) {
+      _showErrorSnackBar('Please make a reservation first');
+      return;
     }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentScreen(phoneNumber: widget.phoneNumber!),
+      ),
+    );
+  }
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Enter Phone Number',
-          style: GoogleFonts.poppins(
-              fontWeight: FontWeight.bold, color: Colors.teal),
-        ),
-        content: Form(
-          key: _formKey,
-          child: TextFormField(
-            controller: phoneController,
-            decoration: InputDecoration(
-              labelText: 'Phone Number',
-              labelStyle: GoogleFonts.poppins(color: Colors.teal),
-              prefixIcon: const Icon(Icons.phone, color: Colors.teal),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            keyboardType: TextInputType.phone,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Phone number is required';
-              }
-              if (value.length < 10) {
-                return 'Phone number must be at least 10 digits';
-              }
-              return null;
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child:
-                Text('Cancel', style: GoogleFonts.poppins(color: Colors.teal)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (_formKey.currentState!.validate()) {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        PaymentScreen(phoneNumber: phoneController.text),
-                  ),
-                );
-              }
-            },
-            child: Text('Proceed',
-                style: GoogleFonts.poppins(color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.teal,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ],
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.poppins()),
+        backgroundColor: Colors.redAccent,
       ),
     );
   }
@@ -175,188 +115,245 @@ class _MenuScreenState extends State<MenuScreen> {
     super.initState();
     _loadMenu();
     SpeechHelper.speak(
-        'This is the Menu Screen. Browse vegetarian or non-vegetarian items by course - appetizers, main courses, or desserts. Add them to your cart and place your order or proceed to payment.');
+        'This is the Menu Screen. Browse items and add them to your cart after making a reservation.');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: Text(
-          'Menu',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            color: Colors.white,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.teal.shade600, Colors.teal.shade100],
           ),
         ),
-        backgroundColor: Colors.teal,
-        actions: [
-          IconButton(
-            icon: Stack(
-              children: [
-                const Icon(Icons.shopping_cart, color: Colors.white),
-                if (_cart.isNotEmpty)
-                  Positioned(
-                    right: 0,
-                    child: CircleAvatar(
-                      radius: 8,
-                      backgroundColor: Colors.redAccent,
-                      child: Text(
-                        _cart.length.toString(),
-                        style: GoogleFonts.poppins(
-                            fontSize: 10, color: Colors.white),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            onPressed: _cart.isNotEmpty ? _showCartDialog : null,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment(
-                        value: 'veg',
-                        label:
-                            Text('Vegetarian', style: GoogleFonts.poppins())),
-                    ButtonSegment(
-                        value: 'non-veg',
-                        label: Text('Non-Veg', style: GoogleFonts.poppins())),
-                  ],
-                  selected: {_selectedCategory},
-                  onSelectionChanged: (newSelection) {
-                    setState(() {
-                      _selectedCategory = newSelection.first;
-                      _loadMenu();
-                    });
-                  },
-                  style: SegmentedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.teal,
-                    selectedForegroundColor: Colors.white,
-                    selectedBackgroundColor: Colors.teal,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment(
-                        value: 'all',
-                        label: Text('All', style: GoogleFonts.poppins())),
-                    ButtonSegment(
-                        value: 'appetizer',
-                        label:
-                            Text('Appetizers', style: GoogleFonts.poppins())),
-                    ButtonSegment(
-                        value: 'main',
-                        label:
-                            Text('Main Course', style: GoogleFonts.poppins())),
-                    ButtonSegment(
-                        value: 'dessert',
-                        label: Text('Desserts', style: GoogleFonts.poppins())),
-                  ],
-                  selected: {_selectedCourse},
-                  onSelectionChanged: (newSelection) {
-                    setState(() {
-                      _selectedCourse = newSelection.first;
-                      _loadMenu();
-                    });
-                  },
-                  style: SegmentedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.teal,
-                    selectedForegroundColor: Colors.white,
-                    selectedBackgroundColor: Colors.teal,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: _menuItems.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _menuItems.length,
-                    itemBuilder: (context, index) {
-                      final item = _menuItems[index];
-                      return Card(
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        margin: const EdgeInsets.only(bottom: 10),
-                        child: ListTile(
-                          leading: item['image_url'] != null
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.network(
-                                    item['image_url'],
-                                    width: 60,
-                                    height: 60,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            const Icon(Icons.error,
-                                                color: Colors.red),
-                                  ),
-                                )
-                              : const Icon(Icons.fastfood, color: Colors.teal),
-                          title: Text(item['name'],
-                              style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.w600)),
-                          subtitle: Text(
-                              '\$${item['price'].toStringAsFixed(2)}',
-                              style:
-                                  GoogleFonts.poppins(color: Colors.grey[600])),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.add_circle,
-                                color: Colors.teal),
-                            onPressed: () => _addToCart(item),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Menu',
+                          style: GoogleFonts.poppins(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                         ),
-                      );
-                    },
+                        Stack(
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.shopping_cart,
+                                  color: Colors.white, size: 30),
+                              onPressed:
+                                  _cart.isNotEmpty ? _showCartDialog : null,
+                            ),
+                            if (_cart.isNotEmpty)
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.redAccent,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                    _cart.length.toString(),
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-          ),
-        ],
-      ),
-      floatingActionButton: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          if (_cart.isNotEmpty)
-            FloatingActionButton.extended(
-              onPressed: _placeOrder,
-              label: Text(
-                'Place Order (\$${_totalAmount.toStringAsFixed(2)})',
-                style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
+                        _buildSegmentedButton(
+                          ['veg', 'non-veg'],
+                          ['Vegetarian', 'Non-Veg'],
+                          _selectedCategory,
+                          (value) => setState(() {
+                            _selectedCategory = value;
+                            _loadMenu();
+                          }),
+                        ),
+                        const SizedBox(height: 15),
+                        _buildSegmentedButton(
+                          ['all', 'appetizer', 'main', 'dessert'],
+                          ['All', 'Appetizers', 'Main', 'Desserts'],
+                          _selectedCourse,
+                          (value) => setState(() {
+                            _selectedCourse = value;
+                            _loadMenu();
+                          }),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: _menuItems.isEmpty
+                        ? Center(
+                            child:
+                                CircularProgressIndicator(color: Colors.white))
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(20),
+                            itemCount: _menuItems.length,
+                            itemBuilder: (context, index) {
+                              final item = _menuItems[index];
+                              return Card(
+                                elevation: 5,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(15)),
+                                margin: const EdgeInsets.only(bottom: 15),
+                                child: ListTile(
+                                  leading: ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: item['image_url'] != null
+                                        ? Image.network(
+                                            item['image_url'],
+                                            width: 60,
+                                            height: 60,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) => Icon(
+                                                Icons.error,
+                                                color: Colors.red),
+                                          )
+                                        : Icon(Icons.fastfood,
+                                            color: Colors.teal.shade700),
+                                  ),
+                                  title: Text(item['name'],
+                                      style: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.w600)),
+                                  subtitle: Text(
+                                      '\$${item['price'].toStringAsFixed(2)}',
+                                      style: GoogleFonts.poppins(
+                                          color: Colors.grey[600])),
+                                  trailing: IconButton(
+                                    icon: Icon(Icons.add_circle,
+                                        color: Colors.teal.shade700),
+                                    onPressed: () => _addToCart(item),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  if (_cart.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton(
+                            onPressed:
+                                widget.phoneNumber != null ? _placeOrder : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.teal.shade700,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 15),
+                            ),
+                            child: Text(
+                              'Order (\$${_totalAmount.toStringAsFixed(2)})',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: _showPhoneNumberDialog,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 15),
+                            ),
+                            child: Text(
+                              'Pay Now',
+                              style: GoogleFonts.poppins(
+                                color: Colors.teal.shade700,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
-              backgroundColor: Colors.teal,
-            ),
-          const SizedBox(width: 10),
-          FloatingActionButton.extended(
-            onPressed: _showPhoneNumberDialog,
-            label: Text(
-              'Go to Payment',
-              style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
-            ),
-            backgroundColor: Colors.teal,
+              Positioned(
+                bottom: 20,
+                left: 20,
+                child: Navigator.canPop(context)
+                    ? IconButton(
+                        icon: Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      )
+                    : SizedBox.shrink(),
+              ),
+            ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSegmentedButton(List<String> values, List<String> labels,
+      String selected, Function(String) onChanged) {
+    return Container(
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: List.generate(values.length, (index) {
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(values[index]),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected == values[index]
+                      ? Colors.white
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(
+                    labels[index],
+                    style: GoogleFonts.poppins(
+                      color: selected == values[index]
+                          ? Colors.teal.shade700
+                          : Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
       ),
     );
   }
@@ -368,7 +365,7 @@ class _MenuScreenState extends State<MenuScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text('Your Cart',
             style: GoogleFonts.poppins(
-                fontWeight: FontWeight.bold, color: Colors.teal)),
+                fontWeight: FontWeight.bold, color: Colors.teal.shade700)),
         content: SizedBox(
           width: double.maxFinite,
           child: Column(
@@ -398,7 +395,8 @@ class _MenuScreenState extends State<MenuScreen> {
                       style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                   Text('\$${_totalAmount.toStringAsFixed(2)}',
                       style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.bold, color: Colors.teal)),
+                          fontWeight: FontWeight.bold,
+                          color: Colors.teal.shade700)),
                 ],
               ),
             ],
@@ -407,15 +405,15 @@ class _MenuScreenState extends State<MenuScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child:
-                Text('Close', style: GoogleFonts.poppins(color: Colors.teal)),
+            child: Text('Close',
+                style: GoogleFonts.poppins(color: Colors.teal.shade700)),
           ),
           ElevatedButton(
-            onPressed: _placeOrder,
+            onPressed: widget.phoneNumber != null ? _placeOrder : null,
             child: Text('Place Order',
                 style: GoogleFonts.poppins(color: Colors.white)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.teal,
+              backgroundColor: Colors.teal.shade700,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),
