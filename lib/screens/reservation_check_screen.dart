@@ -17,6 +17,7 @@ class _ReservationCheckScreenState extends State<ReservationCheckScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  bool _isMuted = false;
 
   Future<void> _checkReservation() async {
     if (_formKey.currentState!.validate()) {
@@ -26,7 +27,7 @@ class _ReservationCheckScreenState extends State<ReservationCheckScreen> {
           Uri.parse(
               'http://localhost:5000/api/check-reservation?phone=${_phoneController.text}'),
         );
-        print('API Response: ${response.body}'); // Debug response
+        print('API Response: ${response.body}');
         setState(() => _isLoading = false);
 
         if (response.statusCode == 200) {
@@ -71,11 +72,32 @@ class _ReservationCheckScreenState extends State<ReservationCheckScreen> {
     );
   }
 
+  void _toggleMute() {
+    setState(() {
+      _isMuted = !_isMuted;
+      if (_isMuted) {
+        SpeechHelper.stop();
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
-    SpeechHelper.speak(
-        'This is the Reservation Check Screen. Enter your phone number to check or make a reservation.');
+    SpeechHelper.initializeTts();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isMuted) {
+        SpeechHelper.speak(
+            'This is the Reservation Check Screen. Enter your phone number to check or make a reservation.');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    SpeechHelper.stop();
+    SpeechHelper.dispose();
+    super.dispose();
   }
 
   @override
@@ -207,12 +229,23 @@ class _ReservationCheckScreenState extends State<ReservationCheckScreen> {
               Positioned(
                 bottom: 20,
                 left: 20,
-                child: Navigator.canPop(context)
-                    ? IconButton(
-                        icon: Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      )
-                    : SizedBox.shrink(),
+                child: Row(
+                  children: [
+                    Navigator.canPop(context)
+                        ? IconButton(
+                            icon: Icon(Icons.arrow_back, color: Colors.white),
+                            onPressed: () => Navigator.pop(context),
+                          )
+                        : SizedBox.shrink(),
+                    IconButton(
+                      icon: Icon(
+                        _isMuted ? Icons.volume_off : Icons.volume_up,
+                        color: Colors.white,
+                      ),
+                      onPressed: _toggleMute,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

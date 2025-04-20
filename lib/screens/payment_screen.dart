@@ -20,14 +20,27 @@ class _PaymentScreenState extends State<PaymentScreen> {
   List<Order> _orders = [];
   double _totalAmount = 0.0;
   bool _isLoading = true;
+  bool _isMuted = false;
 
   @override
   void initState() {
     super.initState();
+    SpeechHelper.initializeTts();
     _phoneController.text = widget.initialPhoneNumber ?? '';
     _fetchOrders(_phoneController.text);
-    SpeechHelper.speak(
-        'This is the Payment Screen. Review your unpaid orders.');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isMuted) {
+        SpeechHelper.speak(
+            'This is the Payment Screen. Review your unpaid orders.');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    SpeechHelper.stop();
+    SpeechHelper.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchOrders(String phone) async {
@@ -166,6 +179,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
         backgroundColor: Colors.redAccent,
       ),
     );
+  }
+
+  void _toggleMute() {
+    setState(() {
+      _isMuted = !_isMuted;
+      if (_isMuted) {
+        SpeechHelper.stop();
+      }
+    });
   }
 
   @override
@@ -382,9 +404,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
               Positioned(
                 bottom: 20,
                 left: 20,
-                child: IconButton(
-                  icon: Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        _isMuted ? Icons.volume_off : Icons.volume_up,
+                        color: Colors.white,
+                      ),
+                      onPressed: _toggleMute,
+                    ),
+                  ],
                 ),
               ),
             ],

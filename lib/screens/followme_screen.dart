@@ -2,16 +2,46 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'speech_helper.dart';
 
-class FollowMeScreen extends StatelessWidget {
+class FollowMeScreen extends StatefulWidget {
   const FollowMeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      SpeechHelper.speak(
-          'This is the Follow Me screen. The robot is preparing to guide you to your table.');
-    });
+  _FollowMeScreenState createState() => _FollowMeScreenState();
+}
 
+class _FollowMeScreenState extends State<FollowMeScreen> {
+  bool _isMuted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    SpeechHelper.initializeTts();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isMuted) {
+        SpeechHelper.speak(
+            'This is the Follow Me screen. The robot is preparing to guide you to your table.');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    SpeechHelper.stop();
+    SpeechHelper.dispose();
+    super.dispose();
+  }
+
+  void _toggleMute() {
+    setState(() {
+      _isMuted = !_isMuted;
+      if (_isMuted) {
+        SpeechHelper.stop();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -113,12 +143,23 @@ class FollowMeScreen extends StatelessWidget {
               Positioned(
                 bottom: 20,
                 left: 20,
-                child: Navigator.canPop(context)
-                    ? IconButton(
-                        icon: Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      )
-                    : SizedBox.shrink(),
+                child: Row(
+                  children: [
+                    Navigator.canPop(context)
+                        ? IconButton(
+                            icon: Icon(Icons.arrow_back, color: Colors.white),
+                            onPressed: () => Navigator.pop(context),
+                          )
+                        : SizedBox.shrink(),
+                    IconButton(
+                      icon: Icon(
+                        _isMuted ? Icons.volume_off : Icons.volume_up,
+                        color: Colors.white,
+                      ),
+                      onPressed: _toggleMute,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

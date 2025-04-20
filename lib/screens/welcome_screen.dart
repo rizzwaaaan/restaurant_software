@@ -13,6 +13,7 @@ class WelcomeScreen extends StatefulWidget {
 class _WelcomeScreenState extends State<WelcomeScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  bool _isMuted = false;
 
   final List<Map<String, String>> _foodItems = [
     {'image': 'assets/food1.jpg', 'name': '', 'description': ''},
@@ -23,8 +24,30 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   void initState() {
     super.initState();
-    SpeechHelper.speak(
-        'Welcome to the Smart Restaurant. Tap anywhere to proceed to reservation check.');
+    SpeechHelper.initializeTts();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isMuted) {
+        SpeechHelper.speak(
+            'Welcome to the Smart Restaurant. Tap anywhere to proceed to reservation check.');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    SpeechHelper.stop();
+    SpeechHelper.dispose();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _toggleMute() {
+    setState(() {
+      _isMuted = !_isMuted;
+      if (_isMuted) {
+        SpeechHelper.stop();
+      }
+    });
   }
 
   @override
@@ -161,12 +184,23 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               Positioned(
                 bottom: 20,
                 left: 20,
-                child: Navigator.canPop(context)
-                    ? IconButton(
-                        icon: Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      )
-                    : SizedBox.shrink(),
+                child: Row(
+                  children: [
+                    Navigator.canPop(context)
+                        ? IconButton(
+                            icon: Icon(Icons.arrow_back, color: Colors.white),
+                            onPressed: () => Navigator.pop(context),
+                          )
+                        : SizedBox.shrink(),
+                    IconButton(
+                      icon: Icon(
+                        _isMuted ? Icons.volume_off : Icons.volume_up,
+                        color: Colors.white,
+                      ),
+                      onPressed: _toggleMute,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

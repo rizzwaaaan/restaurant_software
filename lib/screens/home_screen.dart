@@ -5,16 +5,44 @@ import 'menu_screen.dart';
 import 'reservation_check_screen.dart';
 import 'speech_helper.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      SpeechHelper.speak(
-          'Welcome to the Home Screen of the Smart Restaurant System. Choose to check your reservation, view the menu, or make a new reservation.');
-    });
+  _HomeScreenState createState() => _HomeScreenState();
+}
 
+class _HomeScreenState extends State<HomeScreen> {
+  bool _isMuted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isMuted) {
+        SpeechHelper.speak(
+            'Welcome to the Home Screen of the Smart Restaurant System. Choose to check your reservation, view the menu, or make a new reservation.');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    SpeechHelper.stop();
+    super.dispose();
+  }
+
+  void _toggleMute() {
+    setState(() {
+      _isMuted = !_isMuted;
+      if (_isMuted) {
+        SpeechHelper.stop();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -84,6 +112,17 @@ class HomeScreen extends StatelessWidget {
                 child: IconButton(
                   icon: Icon(Icons.arrow_back, color: Colors.white),
                   onPressed: () => Navigator.pop(context),
+                ),
+              ),
+              Positioned(
+                top: 20,
+                right: 20,
+                child: IconButton(
+                  icon: Icon(
+                    _isMuted ? Icons.volume_off : Icons.volume_up,
+                    color: Colors.white,
+                  ),
+                  onPressed: _toggleMute,
                 ),
               ),
             ],

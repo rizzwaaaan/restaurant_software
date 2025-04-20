@@ -19,6 +19,7 @@ class _MenuScreenState extends State<MenuScreen> {
   String _selectedCategory = 'veg';
   String _selectedCourse = 'all';
   final List<Map<String, dynamic>> _cart = [];
+  bool _isMuted = false;
 
   Future<void> _loadMenu() async {
     try {
@@ -253,12 +254,33 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
+  void _toggleMute() {
+    setState(() {
+      _isMuted = !_isMuted;
+      if (_isMuted) {
+        SpeechHelper.stop();
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    SpeechHelper.initializeTts();
     _loadMenu();
-    SpeechHelper.speak(
-        'This is the Menu Screen. Browse items and add them to your cart after making a reservation.');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isMuted) {
+        SpeechHelper.speak(
+            'This is the Menu Screen. Browse items and add them to your cart after making a reservation.');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    SpeechHelper.stop();
+    SpeechHelper.dispose();
+    super.dispose();
   }
 
   @override
@@ -440,12 +462,23 @@ class _MenuScreenState extends State<MenuScreen> {
               Positioned(
                 bottom: 20,
                 left: 20,
-                child: Navigator.canPop(context)
-                    ? IconButton(
-                        icon: Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      )
-                    : SizedBox.shrink(),
+                child: Row(
+                  children: [
+                    Navigator.canPop(context)
+                        ? IconButton(
+                            icon: Icon(Icons.arrow_back, color: Colors.white),
+                            onPressed: () => Navigator.pop(context),
+                          )
+                        : SizedBox.shrink(),
+                    IconButton(
+                      icon: Icon(
+                        _isMuted ? Icons.volume_off : Icons.volume_up,
+                        color: Colors.white,
+                      ),
+                      onPressed: _toggleMute,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
