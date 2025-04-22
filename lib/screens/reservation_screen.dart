@@ -242,7 +242,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                                         child: Text(
                                           'Make Reservation',
                                           style: GoogleFonts.poppins(
-                                            fontSize: 18,
+                                            fontSize: 16,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
                                           ),
@@ -250,7 +250,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                                       ),
                                 const SizedBox(height: 20),
                                 Text(
-                                  'Smart Restaurant © 2025',
+                                  '',
                                   style: GoogleFonts.poppins(
                                       color: Colors.grey[600]),
                                   textAlign: TextAlign.center,

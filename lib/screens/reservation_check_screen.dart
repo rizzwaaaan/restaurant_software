@@ -134,7 +134,7 @@ class _ReservationCheckScreenState extends State<ReservationCheckScreen> {
                                 Text(
                                   'Check Reservation',
                                   style: GoogleFonts.poppins(
-                                    fontSize: 32,
+                                    fontSize: 30,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.teal.shade700,
                                   ),
@@ -191,7 +191,7 @@ class _ReservationCheckScreenState extends State<ReservationCheckScreen> {
                                             child: Text(
                                               'Check Reservation',
                                               style: GoogleFonts.poppins(
-                                                fontSize: 18,
+                                                fontSize: 16,
                                                 fontWeight: FontWeight.bold,
                                                 color: Colors.white,
                                               ),
@@ -203,7 +203,7 @@ class _ReservationCheckScreenState extends State<ReservationCheckScreen> {
                                             child: Text(
                                               'Make New Reservation',
                                               style: GoogleFonts.poppins(
-                                                fontSize: 16,
+                                                fontSize: 14,
                                                 color: Colors.teal.shade700,
                                                 fontWeight: FontWeight.w600,
                                               ),
@@ -213,7 +213,7 @@ class _ReservationCheckScreenState extends State<ReservationCheckScreen> {
                                       ),
                                 const SizedBox(height: 20),
                                 Text(
-                                  'Smart Restaurant © 2025',
+                                  '',
                                   style: GoogleFonts.poppins(
                                       color: Colors.grey[600]),
                                 ),

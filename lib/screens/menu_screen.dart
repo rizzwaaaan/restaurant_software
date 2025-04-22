@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'payment_screen.dart';
+import 'entertainment_screen.dart'; // Added for navigation
 import 'package:restaurant/models/orders.dart';
 import 'speech_helper.dart';
 
@@ -68,12 +69,52 @@ class _MenuScreenState extends State<MenuScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        _showPhoneNumberDialog(phoneNumber);
+        _showEntertainmentPrompt(phoneNumber); // New method for popup
       } else {
         _showErrorSnackBar('Failed to place order: ${response.body}');
       }
     } catch (e) {
       _showErrorSnackBar('Error: $e');
+    }
+  }
+
+  Future<void> _showEntertainmentPrompt(String phoneNumber) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Entertainment Option',
+            style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold, color: Colors.teal.shade700)),
+        content: Text(
+          'Do you want to go to the entertainment screen?',
+          style: GoogleFonts.poppins(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('No',
+                style: GoogleFonts.poppins(color: Colors.teal.shade700)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.teal.shade700,
+            ),
+            child: Text('Yes', style: GoogleFonts.poppins(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const EntertainmentScreen()),
+      );
+    } else {
+      SpeechHelper.speak('Enjoy your meal!');
     }
   }
 

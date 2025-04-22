@@ -92,6 +92,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
       if (_paymentStatus == 'success') {
         await _fetchOrders(phoneNumber);
+        await _removeReservation(
+            phoneNumber); // Remove reservation after payment
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -113,6 +115,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
     } catch (e) {
       setState(() => _paymentStatus = 'error');
       _showErrorSnackBar('Error: $e');
+    }
+  }
+
+  Future<void> _removeReservation(String phoneNumber) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('http://localhost:5000/api/reservations?phone=$phoneNumber'),
+      );
+      if (response.statusCode == 200) {
+        print('Reservation removed successfully for phone: $phoneNumber');
+      } else {
+        print('Failed to remove reservation: ${response.body}');
+      }
+    } catch (e) {
+      print('Error removing reservation: $e');
     }
   }
 
